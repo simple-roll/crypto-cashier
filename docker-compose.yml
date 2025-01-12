@@ -1,0 +1,87 @@
+services:
+  django_install:
+    build: ./django
+    command: ./install/install.sh
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./django:/home/user/django
+    env_file:
+      - .env
+
+  web:
+    build: ./django
+    command: ./runserver.sh
+    user: user
+    ports:
+      - $GUNICORN_PORT:8000
+    restart: unless-stopped
+    depends_on:
+      django_install: 
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./django:/home/user/django
+    env_file:
+      - .env
+
+  celery:
+    build: ./django
+    command: ./env/bin/celery -A cashier worker --beat 
+    restart: unless-stopped
+    depends_on:
+      django_install: 
+        condition: service_completed_successfully
+      redis: 
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./django:/home/user/django
+    env_file:
+      - .env
+     
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s  
+
+  redis:
+    image: redis:7.0-alpine
+    ports:
+      - 6379:6379
+    restart: unless-stopped
+    volumes:
+      - ./redis/data:/data
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - $NGINX_PORT:80
+    volumes:
+      - ./django:/django
+      - type: bind 
+        source: ./nginx/nginx.conf.template
+        target: /etc/nginx/templates/nginx.conf.template
+    depends_on:
+      web:
+        condition: service_started
+      django_install: 
+        condition: service_completed_successfully
+    env_file:
+      - ./.env
+

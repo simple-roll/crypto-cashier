@@ -1,0 +1,16 @@
+config.env
+
+.env
+env/
+sandbox/
+fixtures/
+migrations/
+staticfiles/
+!migrations/__init__.py
+
+postgres/data/
+redis/data/
+
+*.sw[o,p]
+.flake8
+

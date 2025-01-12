@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section">
+  <!-- action="/your-name/" -->
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- Hidden fields -->
+    {% for hidden in form.hidden_fields %}
+      {{ hidden }}
+    {% endfor %}
+
+    <div class="container is-max-tablet">
+      {% if form.errors %}
+        {% for field in form %}
+          {% for error in field.errors %}
+            <div class="notification is-error is-outlined">
+              {{field.label}}: {{ error|escape }}
+            </div>
+          {% endfor %}
+        {% endfor %}
+      {% endif %}
+
+      <nav class="level">
+        <div class="level-item has-text-centered">
+          <div>
+            <h1 class="title">
+              {{ merchant.name }}
+            </h1>
+            <p class="subtitle">
+              {{ form.product_name.value }}
+            </p>
+          </div>
+        </div>
+      </nav>
+      <nav class="level">
+        <div class="level-item has-text-centered">
+          <div>
+            <p class="heading">Amount</p>
+            <p class="title is-size-5">
+              {{ form.amount.value }} {{ form.coin_name.value }}
+            </p>
+          </div>
+        </div>
+      </nav>
+      <nav class="level">
+        <div class="level-item has-text-centered">
+          <div>
+            <p class="heading">Network</p>
+            <p class="title is-size-5">
+              {{ payment_method.chain_name }} 
+              {% if payment_method.standard != 'NATIVE' %}
+                ({{ payment_method.standard }})
+              {% endif %}
+            <p>
+          </div>
+        </div>
+      </nav>
+      <nav class="level">
+        <div class="level-item has-text-centered">
+          <div>
+            <!-- <div class="field has-addons"> -->
+            <!--   <p class="heading">Email</p> -->
+            <!--   <p class="control pt-2"> -->
+            <!--     <input --> 
+            <!--       name="customer_email" -->
+            <!--       class="input is-rounded" --> 
+            <!--       value="{ { form.customer_email.value }}" --> 
+            <!--       type="text"> -->
+            <!--   </p> -->
+            <!-- </div> -->
+            <div class="field mt-5 is-grouped is-grouped-centered">
+              <p class="control">
+                <button class="button is-rounded is-large">
+                  Pay
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </form>
+</section>
+{% endblock content %}

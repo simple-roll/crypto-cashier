@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section">
+  <div class="container is-max-tablet">
+    <nav class="level">
+      <div class="level-item has-text-centered">
+        <div>
+          <h1 class="title">
+            {{ invoice.merchant.name }}
+          </h1>
+          <p class="subtitle is-5">
+            Payment for {{ invoice.product_name }}
+          </p>
+        </div>
+      </div>
+    </nav>
+    <nav id="timerLevel" class="level">
+      <div class="level-item has-text-centered">
+        <div>
+          <p class="heading">Payment Timeout</p>
+          <p class="title is-size-5" id="safeTimerDisplay"><p>
+        </div>
+      </div>
+    </nav>
+    {% if invoice.address.qr_image %}
+        <nav id="qrLevel" class="level">
+          <div class="level-item has-text-centered">
+            <div>
+              <img src="{{ invoice.address.qr_image.url }}"> 
+            </div>
+          </div>
+        </nav>
+    {% endif %}
+    <nav id="addressLevel" class="level">
+      <div class="level-item has-text-centered">
+        <div>
+          <p class="heading">
+            Address:
+            {{ payment_method.chain_name }} 
+            {% if payment_method.standard != 'NATIVE' %}
+              ({{ payment_method.standard }})
+            {% endif %}
+          </p>
+          <p class="title is-size-5">
+            {{ invoice.address }}
+          </p>
+          <p class="control pt-2">
+            <button 
+              class="button is-small"
+              copy-value="{{ invoice.address }}" 
+              onclick="copy(this.getAttribute('copy-value'))"
+            >Copy</button>
+          </p>
+        </div>
+      </div>
+    </nav>
+    <nav id="amountLevel" class="level">
+      <div class="level-item has-text-centered">
+        <div>
+          <p class="heading">
+            Amount ({{ payment_method.coin_name }})
+          </p>
+          <!-- <div class="field is-grouped is-grouped-multiline"> -->
+          <p class="control title is-size-5">
+            {{ invoice.get_amount_rounded }}
+          </p>
+          <p class="control pt-2">
+            <button 
+              class="button is-small"
+              copy-value="{{ invoice.get_amount_rounded }}" 
+              onclick="copy(this.getAttribute('copy-value'))"
+            >Copy</button>
+          </p>
+          <!-- </div> -->
+        </div>
+      </div>
+    </nav>
+    <nav class="level">
+      <div class="level-item has-text-centered">
+        <div>
+          <p class="heading">Invoice status</p>
+          <p class="title is-size-5">{{ invoice.get_status_display }}<p>
+          <p id="underpaidMessage" 
+          style="display:none"
+          class="subtitle is-size-6"></p>
+        </div>
+      </div>
+    </nav>
+    <nav class="level">
+      <div class="level-item has-text-centered">
+        <div>
+          {% if invoice.transactions.exists %}
+            <p class="heading">
+              Transactions found
+            </p>
+            <table class="table is-bordered">
+              <tbody>
+                {% for tranz in invoice.transactions.all %}
+                  <tr>
+                    <td>{{ tranz.txid }}</td>
+                    <td>
+                      {{ tranz.get_amount_rounded }} 
+                      {{ payment_method.coin_name }}
+                    </td>
+                    <td>
+                      {{ tranz.confirmations }}/{{ payment_method.confirmations_required }} 
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="heading">No transactions found</p>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+  </div>
+</section>
+<script>
+  // Pass template vars
+  const secondsLeft = "{{ seconds_left }}";
+  const invoiceStatus = "{{ invoice.status }}";
+  const invoiceIsPorcessing = "{{ invoice.is_processing }}";  // str True or False
+  const invoiceAmount = "{{ invoice.amount }}";
+  const invoiceAmountSent = "{{ invoice.get_total_sent_amount }}";
+  const invoiceCoinName = "{{ invoice.payment_method.coin_name }}";
+
+  const timerDisplay = document.querySelector('#safeTimerDisplay');
+  const timerLevel = document.querySelector('#timerLevel');
+  const qrLevel = document.querySelector('#qrLevel');
+  const finishedLevel = document.querySelector('#finishedLevel');
+  const addressLevel = document.querySelector('#addressLevel');
+  const underpaidMessage = document.querySelector('#underpaidMessage');
+
+  // Based on https://stackoverflow.com/questions/31559469/how-to-create-a-simple-javascript-timer
+  function startTimer(duration, display) {
+    var timer = duration, minutes, seconds;
+    setInterval(function () {
+      minutes = parseInt(timer / 60, 10)
+      seconds = parseInt(timer % 60, 10);
+
+      minutes = minutes < 10 ? "0" + minutes : minutes;
+      seconds = seconds < 10 ? "0" + seconds : seconds;
+
+      display.textContent = minutes + ":" + seconds;
+
+      if (--timer < 0) {
+        timer = 0;
+        // timer = duration; // uncomment this line to reset timer automatically after reaching 0
+      }
+    }, 1000);
+  }
+
+  function copy(value) {
+    navigator.clipboard.writeText(value);
+  }
+
+  function stopShowingProcessing() {
+    timerLevel.style.display = 'none';
+    qrLevel.style.display = 'none';
+    addressLevel.style.display = 'none';
+    amountLevel.style.display = 'none';
+    underpaidMessage.style.display = 'none';
+  }
+
+  function showUnderpaidMessage() {
+    const remainAmount = invoiceAmount - invoiceAmountSent;
+    const text = 'Please pay the remaining amount ' + remainAmount + ' ' + invoiceCoinName;
+    underpaidMessage.textContent = text;
+    underpaidMessage.style.display = 'block';
+  }
+
+  window.onload = function () {
+    if (invoiceIsPorcessing === "True") {
+      startTimer(secondsLeft, timerDisplay);
+      if (invoiceStatus === "UNDERPAID"){
+        showUnderpaidMessage();
+      }
+    } else {
+      stopShowingProcessing()
+    }
+  };
+
+  window.setTimeout( function() {
+    window.location.reload();
+  }, 30000);
+</script>
+{% endblock content %}
