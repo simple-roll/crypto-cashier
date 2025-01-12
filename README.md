@@ -73,7 +73,7 @@ Add your own cryptocurrency addresses or leave the `Address` list blank, and the
 **Important:** If you add your own addresses, please refrain from accepting payments to them manually, as this can conflict with customer payments and cause errors.
 
 ### Creating First Invoice 
-Let's simulate a payment for a VPN service using USDT on the Ethereum chain.
+Let's simulate a payment for a VPN service using Ethereum.
 
 1. Replace YOUR_MERCHANT_UUID with your created merchant uuid, copy and paste URL to browser
 ```
